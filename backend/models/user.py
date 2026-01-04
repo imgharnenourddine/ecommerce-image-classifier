@@ -1,18 +1,20 @@
-from backend import db,loginmanager
-from datetime import datetime
+from backend import db
+from flask_login import UserMixin
 
-@loginmanager.user_loader
-def load_user(user_id):
-    return User.query.get(int(user_id))
-class User(db.Model):
-    id=db.Column(db.Integer,primary_key=True)
-    fname=db.Column(db.String(25),nullable=False)
-    lname=db.Column(db.String(25),nullable=False)
-    username=db.Column(db.String(25),unique=True,nullable=False)
-    email=db.Column(db.String(60),unique=True,nullable=False)
-    password=db.Column(db.String(60),nullable=False)
+class User(db.Model, UserMixin):
+    __tablename__ = 'user' # On force le nom de la table
+    
+    id = db.Column(db.Integer, primary_key=True)
+    fname = db.Column(db.String(25), nullable=False)
+    lname = db.Column(db.String(25), nullable=False)
+    username = db.Column(db.String(25), unique=True, nullable=False)
+    email = db.Column(db.String(60), unique=True, nullable=False)
+    password = db.Column(db.String(60), nullable=False)
     is_admin = db.Column(db.Boolean, default=False, nullable=False)
     
-    images=db.relationship('image',backref='proprietaire',lazy=True)
+    # Relation : Un User a plusieurs Images
+    # 'Image' avec majuscule car c'est la classe Python
+    images = db.relationship('Image', backref='proprietaire', lazy=True)
+
     def __repr__(self):
-        return f'USER({self.fname},{self.lname},{self.username},{self.email})'
+        return f"User('{self.username}', '{self.email}')"

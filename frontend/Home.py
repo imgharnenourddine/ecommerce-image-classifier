@@ -1,6 +1,5 @@
 import streamlit as st
 import streamlit.components.v1 as components
-import random
 
 # Page Configuration
 st.set_page_config(
@@ -10,10 +9,10 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Custom CSS Injection
+# --- CSS MODERNE & BOUTONS AGRANDIS ---
 st.markdown("""
 <style>
-    /* Fonts: Inter for that clean SaaS look */
+    /* Fonts: Inter */
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap');
 
     /* Global Reset & Body */
@@ -23,18 +22,39 @@ st.markdown("""
             radial-gradient(at 0% 0%, rgba(5, 117, 230, 0.15) 0px, transparent 50%),
             radial-gradient(at 100% 0%, rgba(0, 242, 96, 0.1) 0px, transparent 50%);
         color: #ffffff;
-        
     }
 
-     [data-testid="stSidebar"] {
-        background-color: #353942 !important;
-        border-right: 1px solid rgba(255,255,255,0.1);
-    }
-    header[data-testid="stHeader"] {
-        background-color: rgba(0,0,0,0) !important;
+    /* --- MODIFICATION ICI : ON CACHE LA SIDEBAR --- */
+    [data-testid="stSidebar"] {
+        display: none;
     }
     
-    /* Global Glow Vignette (Dayos Style) */
+    /* On cache le header par défaut de Streamlit */
+    header[data-testid="stHeader"] {
+        background-color: transparent !important;
+        visibility: hidden;
+    }
+    
+    /* Correction du padding pour que la navbar soit tout en haut */
+    .block-container {
+        padding-top: 1rem !important;
+    }
+
+    /* Style du Logo dans la Navbar */
+    .nav-logo {
+        font-family: 'Inter', sans-serif;
+        font-weight: 900;
+        font-size: 1.5rem;
+        background: linear-gradient(90deg, #fff, #aaa);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        letter-spacing: -1px;
+        display: flex;
+        align-items: center;
+        height: 100%;
+    }
+    
+    /* Global Glow Vignette */
     .stApp::after {
         content: "";
         position: fixed;
@@ -48,7 +68,6 @@ st.markdown("""
     /* Headings */
     h1, h2, h3 {
         font-family: 'Inter', sans-serif;
-        letter-spacing: -0.03em; /* Tight kerning like Dayos */
         color: #ffffff;
     }
     
@@ -61,127 +80,53 @@ st.markdown("""
         line-height: 1.1;
     }
 
-    h2 {
-        font-size: 2.5rem;
-        margin-bottom: 1rem;
-    }
+    h2 { font-size: 2.5rem; margin-bottom: 1rem; }
 
-    /* Scroll Animation Utility */
+    /* Scroll Animation */
     .animate-on-scroll {
         opacity: 0;
         transform: translateY(30px);
         transition: opacity 0.8s ease-out, transform 0.8s ease-out;
     }
-    
     .animate-on-scroll.active {
         opacity: 1;
         transform: translateY(0);
     }
 
-    /* Bento Grid Card */
+    /* Bento Card Styling */
     .bento-card {
         background: rgba(255, 255, 255, 0.03);
         border: 1px solid rgba(255, 255, 255, 0.08);
         border-radius: 32px;
         padding: 40px;
         backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
         transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.4s ease;
         height: 100%;
         position: relative;
-        overflow: visible; /* Changed to visible to allow blur to extend outside */
+        overflow: visible;
         display: flex;
         flex-direction: column;
     }
 
-    /* Blurred blob light background effect */
+    /* Card Glow Effect */
     .bento-card::before {
         content: "";
         position: absolute;
-        inset: -100px; /* Extend beyond card boundaries */
-        background: radial-gradient(
-            circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
-            rgba(5, 117, 230, 0.15) 0%,
-            rgba(0, 242, 96, 0.09) 30%,
-            transparent 60%
-        );
+        inset: -100px;
+        background: radial-gradient(circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(5, 117, 230, 0.15) 0%, rgba(0, 242, 96, 0.09) 30%, transparent 60%);
         filter: blur(60px);
-        opacity: calc(var(--glow-opacity, 0) * 1.0); /* Use proximity-based opacity - increased visibility */
+        opacity: var(--glow-opacity, 0);
         transition: opacity 0.3s ease;
         pointer-events: none;
         z-index: -1;
     }
-
-    .bento-card-wide {
-        grid-column: span 2;
-    }
-
-    /* Blob elements for mouse tracking */
-    .blob {
-        position: absolute;
-        z-index: 1;
-        top: 0;
-        left: 0;
-        width: 300px;
-        height: 300px;
-        border-radius: 50%;
-        background: radial-gradient(
-            circle,
-            rgba(5, 117, 230, 0.6) 0%,
-            rgba(0, 242, 96, 0.3) 40%,
-            transparent 70%
-        );
-        opacity: calc(var(--glow-opacity, 0) * 1); /* Use proximity-based opacity */
-        pointer-events: none;
-        transform: translate(-50%, -50%);
-        filter: blur(40px);
-        transition: opacity 0.3s ease;
-    }
-
-    .fakeblob {
-        display: block;
-        position: absolute;
-        z-index: -1;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        border-radius: 32px;
-        opacity: 0;
-        pointer-events: none;
-    }
-
-    /* Dynamic border glow that follows mouse */
-    .bento-card::after {
-        content: "";
-        position: absolute;
-        inset: 0;
-        border-radius: 32px;
-        padding: 1px; /* Minimized stroke */
-        background: radial-gradient(
-            500px circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
-            rgba(5, 117, 230, 1.0) 0%,
-            rgba(0, 242, 96, 1.0) 40%,
-            transparent 70%
-        );
-        -webkit-mask: 
-            linear-gradient(#fff 0 0) content-box, 
-            linear-gradient(#fff 0 0);
-        -webkit-mask-composite: xor;
-        mask-composite: exclude;
-        opacity: calc(var(--glow-opacity, 0) * 1.5);
-        filter: drop-shadow(0 0 8px rgba(0, 242, 96, 0.8)); /* Subtle bloom for fine line */
-        transition: opacity 0.3s ease;
-        pointer-events: none;
-        z-index: 2;
-    }
-
+    
     .bento-card:hover {
         transform: translateY(-5px) scale(1.01);
         box-shadow: 0 20px 40px rgba(0,0,0,0.4);
     }
 
-    /* Metric Card Special */
+    /* Metric Card */
     .metric-value {
         font-size: 3.5rem;
         font-weight: 800;
@@ -196,7 +141,6 @@ st.markdown("""
         font-size: 0.9rem;
     }
 
-    /* Feature Icon */
     .feature-icon {
         background: linear-gradient(135deg, #0575e6, #021b79);
         width: 60px; height: 60px;
@@ -207,42 +151,39 @@ st.markdown("""
         box-shadow: 0 10px 20px rgba(5, 117, 230, 0.3);
     }
 
-    /* Workflow Viz */
-    .workflow-step {
-        display: flex; align-items: center;
-    }
-    .workflow-line {
-        flex-grow: 1; height: 2px; background: #333; margin: 0 15px; position: relative;
-        overflow: hidden; /* Prevent animation overflow */
-    }
-    .workflow-line::after {
-        content: ""; position: absolute; left: -50%; top: 0; height: 100%; width: 50%;
-        background: linear-gradient(90deg, transparent, #0575e6, transparent);
-        animation: activeLine 3s infinite linear;
-    }
-    @keyframes activeLine { 
-        0% { left: -50%; } 
-        100% { left: 150%; } 
-    }
-
-    /* Buttons */
+    /* --- NOUVEAU STYLE DES BOUTONS (LARGE & PREMIUM) --- */
     .stButton button {
         background: #ffffff !important;
         color: #000000 !important;
         border: none !important;
-        border-radius: 99px !important;
-        padding: 12px 32px !important;
-        font-weight: 600 !important;
-        font-size: 16px !important;
+        border-radius: 12px !important;
+        padding: 16px 24px !important; /* Plus d'espace interne */
+        font-weight: 700 !important;
+        font-size: 18px !important;    /* Texte plus grand */
         transition: all 0.3s ease !important;
-        box-shadow: 0 0 20px rgba(255,255,255,0.1);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        width: 100%; /* Prend toute la largeur de la colonne */
     }
     
     .stButton button:hover {
-        transform: scale(1.05);
-        box-shadow: 0 0 30px rgba(255,255,255,0.3);
+        transform: translateY(-3px) scale(1.02);
+        box-shadow: 0 20px 40px rgba(255,255,255,0.2);
+        background: #f0f0f0 !important;
     }
     
+    /* Boutons de la Navbar (Plus petits) */
+    .nav-btn button {
+        padding: 8px 16px !important;
+        font-size: 14px !important;
+        background: rgba(255,255,255,0.1) !important;
+        color: white !important;
+        border: 1px solid rgba(255,255,255,0.2) !important;
+    }
+    .nav-btn button:hover {
+        background: rgba(255,255,255,0.2) !important;
+    }
+
+
     /* Footer */
     .footer-section {
         border-top: 1px solid rgba(255,255,255,0.1);
@@ -251,53 +192,13 @@ st.markdown("""
         color: #666;
     }
 
-    /* HTML Nav Buttons */
-    .nav-button {
-        display: inline-block;
-        background: #ffffff !important;
-        color: #000000 !important;
-        border-radius: 99px !important;
-        padding: 12px 32px !important;
-        font-weight: 600 !important;
-        font-size: 16px !important;
-        text-decoration: none !important;
-        transition: all 0.3s ease !important;
-        box-shadow: 0 0 20px rgba(255,255,255,0.1);
-        margin-bottom: 10px;
-    }
-    
-    .nav-button:hover {
-        transform: scale(1.05);
-        box-shadow: 0 0 30px rgba(255,255,255,0.3);
-        color: #000 !important;
-    }
-
-    .nav-button-secondary {
-        display: inline-block;
-        background: rgba(255,255,255,0.1) !important;
-        color: #ffffff !important;
-        border: 1px solid rgba(255,255,255,0.2) !important;
-        border-radius: 99px !important;
-        padding: 8px 24px !important;
-        font-weight: 500 !important;
-        font-size: 0.9rem !important;
-        text-decoration: none !important;
-        transition: all 0.3s ease !important;
-    }
-
-    .nav-button-secondary:hover {
-        background: rgba(255,255,255,0.2) !important;
-        transform: scale(1.05);
-    }
-
     /* Hide Streamlit Chrome */
     #MainMenu, header, footer {visibility: hidden;}
-    .block-container {padding-top: 2rem;}
 
 </style>
 """, unsafe_allow_html=True)
 
-# JavaScript for global mouse-tracking with proximity-based glow
+# JavaScript for global mouse-tracking (Effet Glow)
 components.html("""
 <script>
 (function() {
@@ -308,37 +209,22 @@ components.html("""
         const parentDoc = window.parent.document;
         const cards = parentDoc.querySelectorAll('.bento-card');
         
-        // Track global mouse position
         parentDoc.addEventListener('mousemove', function(e) {
             globalMouseX = e.clientX;
             globalMouseY = e.clientY;
             
-            // Update all cards based on proximity
             cards.forEach(card => {
                 const rect = card.getBoundingClientRect();
+                const xPercent = ((globalMouseX - rect.left) / rect.width) * 100;
+                const yPercent = ((globalMouseY - rect.top) / rect.height) * 100;
                 
-                // Calculate local mouse position relative to card
-                const localX = globalMouseX - rect.left;
-                const localY = globalMouseY - rect.top;
-                
-                // Convert to percentage
-                const xPercent = (localX / rect.width) * 100;
-                const yPercent = (localY / rect.height) * 100;
-                
-                // Calculate distance from mouse to card center
                 const cardCenterX = rect.left + rect.width / 2;
                 const cardCenterY = rect.top + rect.height / 2;
-                const distance = Math.sqrt(
-                    Math.pow(globalMouseX - cardCenterX, 2) + 
-                    Math.pow(globalMouseY - cardCenterY, 2)
-                );
+                const distance = Math.sqrt(Math.pow(globalMouseX - cardCenterX, 2) + Math.pow(globalMouseY - cardCenterY, 2));
                 
-                // Calculate opacity based on distance (closer = brighter)
-                // Max distance for effect: 400px
                 const maxDistance = 400;
                 const opacity = Math.max(0, 1 - (distance / maxDistance));
                 
-                // Update CSS variables
                 card.style.setProperty('--mouse-x', xPercent + '%');
                 card.style.setProperty('--mouse-y', yPercent + '%');
                 card.style.setProperty('--glow-opacity', opacity);
@@ -348,16 +234,11 @@ components.html("""
     
     function initScrollAnimations() {
         const parentDoc = window.parent.document;
-        const observerOptions = {
-            threshold: 0.1,
-            rootMargin: '0px 0px -50px 0px'
-        };
+        const observerOptions = { threshold: 0.1, rootMargin: '0px 0px -50px 0px' };
 
         const observer = new IntersectionObserver((entries) => {
             entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    entry.target.classList.add('active');
-                }
+                if (entry.isIntersecting) entry.target.classList.add('active');
             });
         }, observerOptions);
 
@@ -365,53 +246,88 @@ components.html("""
         animatedElements.forEach(el => observer.observe(el));
     }
     
-    // Initialize immediately
     initProximityGlow();
     initScrollAnimations();
-    
-    // Re-initialize after delays to catch dynamic content
-    setTimeout(() => { initProximityGlow(); initScrollAnimations(); }, 500);
     setTimeout(() => { initProximityGlow(); initScrollAnimations(); }, 1000);
-    setTimeout(() => { initProximityGlow(); initScrollAnimations(); }, 2000);
 })();
 </script>
 """, height=0)
 
-# --- Hero Section ---
-c1, c2 = st.columns([1, 1], gap="large")
+# --- NAVBAR SECTION (AJOUTÉE) ---
+# On crée 3 colonnes : Logo à gauche, Espace au milieu, Boutons à droite
+nav_c1, nav_c2, nav_c3 = st.columns([2, 6, 2])
+
+with nav_c1:
+    st.markdown('<div class="nav-logo">⚡ E-ComVision</div>', unsafe_allow_html=True)
+
+with nav_c3:
+    # Sous-colonnes pour les boutons Login et Sign Up
+    b1, b2 = st.columns(2)
+    with b1:
+        st.markdown('<div class="nav-btn">', unsafe_allow_html=True)
+        if st.button("Log In", use_container_width=True):
+            st.switch_page("pages/login.py")
+        st.markdown('</div>', unsafe_allow_html=True)
+    with b2:
+        st.markdown('<div class="nav-btn">', unsafe_allow_html=True)
+        if st.button("Sign Up", use_container_width=True):
+            st.switch_page("pages/register.py")
+        st.markdown('</div>', unsafe_allow_html=True)
+
+# Ligne de séparation subtile
+st.markdown("<hr style='border: 0; height: 1px; background-image: linear-gradient(to right, rgba(0, 0, 0, 0), rgba(255, 255, 255, 0.1), rgba(0, 0, 0, 0)); margin-bottom: 30px;'>", unsafe_allow_html=True)
+
+
+# --- Hero Section (ORIGINALE - NON MODIFIÉE) ---
+c1, c2 = st.columns([1.2, 1], gap="large")
 
 with c1:
-    st.markdown('<div class="animate-on-scroll" style="margin-top: 80px;">', unsafe_allow_html=True)
+    st.markdown('<div class="animate-on-scroll" style="margin-top: 60px;">', unsafe_allow_html=True)
     st.markdown("<h1>E-Commerce <br> Intelligence .<br><span style='font-size: 0.5em; opacity: 1; color: #888; font-weight: 400;'>Automated Recognition</span></h1>", unsafe_allow_html=True)
-    st.markdown('<p class="desc-text" style="color: #ccc; font-size: 1.2rem; margin: 30px 0; line-height: 1.6;">Leverage our enterprise-grade computer vision pipeline to automate product tagging, defect detection, and catalog organization. Built for high-volume e-commerce operations, our solution processes millions of images daily with 99.8% accuracy, freeing your team to focus on strategy rather than manual moderation.</p>', unsafe_allow_html=True)
-    
-    st.markdown('<a href="/login" target="_self" class="nav-button">Let\'s predict →</a>', unsafe_allow_html=True)
-    st.markdown('<a href="/admin" target="_self" class="nav-button">🛡️ Admin Portal</a>', unsafe_allow_html=True)
+    st.markdown('<p class="desc-text" style="color: #ccc; font-size: 1.2rem; margin: 30px 0; line-height: 1.6;">Leverage our enterprise-grade computer vision pipeline to automate product tagging, defect detection, and catalog organization. Built for high-volume e-commerce operations.</p>', unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
 
-    st.markdown('<div style="text-align: left; margin-top: 20px;">', unsafe_allow_html=True)
+    # --- ACTION BUTTONS (MODIFIED) ---
+    st.write("") 
+    
+    # Boutons principaux alignés
+    btn_col1, btn_col2 = st.columns([1, 1], gap="medium")
+
+    with btn_col1:
+        # Redirection vers Login pour commencer
+        if st.button("🚀 Let's Predict", type="primary", use_container_width=True):
+            st.switch_page("pages/login.py")
+
+    with btn_col2:
+        # Redirection vers Login (sécurité) pour les admins
+        if st.button("🛡️ Admin Portal", use_container_width=True):
+            st.switch_page("pages/login.py")
+
+    st.write("") # Espace vertical
+    
+    # Section Création de compte
+    st.markdown('<div class="animate-on-scroll" style="margin-top: 20px;">', unsafe_allow_html=True)
     st.caption("Don't have an account?")
-    st.markdown('<a href="/register" target="_self" class="nav-button-secondary">Create Account</a>', unsafe_allow_html=True)
+    if st.button("✨ Create Free Account", use_container_width=True):
+        st.switch_page("pages/register.py")
     st.markdown('</div>', unsafe_allow_html=True)
-    st.markdown('</div>', unsafe_allow_html=True)
+
 
 with c2:
     st.markdown('<div class="animate-on-scroll" style="margin-top: 50px; display: flex; justify-content: center;">', unsafe_allow_html=True)
     st.html("""
         <div style="width: 100%; height: 450px; position: relative;">
-            <!-- Abstract Dashboard UI Mockup -->
             <div style="
                 position: absolute; top: 0; left: 5%; width: 90%; height: 100%;
                 background: #0f0f0f; border: 1px solid #333; border-radius: 20px;
                 box-shadow: 0 50px 100px rgba(0,0,0,0.8);
                 overflow: hidden;
             ">
-                <!-- Header -->
                 <div style="height: 50px; border-bottom: 1px solid #333; display: flex; align-items: center; padding: 0 20px;">
                     <div style="width: 12px; height: 12px; background: #ff5f56; border-radius: 50%; margin-right: 8px;"></div>
                     <div style="width: 12px; height: 12px; background: #ffbd2e; border-radius: 50%; margin-right: 8px;"></div>
                     <div style="width: 12px; height: 12px; background: #27c93f; border-radius: 50%;"></div>
                 </div>
-                <!-- Body -->
                 <div style="padding: 20px;">
                     <div style="width: 60%; height: 20px; background: #333; border-radius: 4px; margin-bottom: 10px;"></div>
                     <div style="width: 40%; height: 20px; background: #222; border-radius: 4px; margin-bottom: 30px;"></div>
@@ -422,7 +338,6 @@ with c2:
                     </div>
                 </div>
             </div>
-            <!-- Floating Element -->
             <div style="
                 position: absolute; bottom: 50px; right: 0; width: 200px; padding: 20px;
                 background: rgba(15,15,15,0.9); border: 1px solid #00f260; border-radius: 16px;
@@ -470,7 +385,7 @@ with r1c1:
         <div class="bento-card">
             <div class="feature-icon">🔍</div>
             <h3>Advanced Recognition</h3>
-            <p style="color: #aaa; margin-top: 10px; line-height: 1.6;">Our proprietary ensemble models combine Convolutional Neural Networks (CNNs) and Vision Transformers (ViTs) to achieve human-level understanding. Trained on a diverse proprietary dataset of over 50 million e-commerce images, the system robustly handles varying lighting conditions, angles, and occlusions to deliver precise classification tags and bounding boxes.</p>
+            <p style="color: #aaa; margin-top: 10px; line-height: 1.6;">Our proprietary ensemble models combine Convolutional Neural Networks (CNNs) and Vision Transformers (ViTs) to achieve human-level understanding.</p>
         </div>
     </div>
     """, unsafe_allow_html=True)
@@ -481,7 +396,7 @@ with r1c2:
         <div class="bento-card">
             <div style="font-size: 3rem;">📂</div>
             <h3>Export Data</h3>
-            <p style="color: #aaa; line-height: 1.6;">Integrate directly with your existing PIM or ERP systems. We support real-time webhooks, RESTful API endpoints for on-demand access, and scheduled batch exports in CSV, JSON, and Parquet formats. Sync directly to your Data Warehouse including Snowflake, BigQuery, and Redshift.</p>
+            <p style="color: #aaa; line-height: 1.6;">Integrate directly with your existing PIM or ERP systems. We support real-time webhooks and RESTful API endpoints.</p>
         </div>
     </div>
     """, unsafe_allow_html=True)
@@ -497,7 +412,7 @@ with r1c3:
                 <div style="width: 20%; height: 50%; background: #00f260; border-radius: 4px;"></div>
                 <div style="width: 20%; height: 90%; background: #333; border-radius: 4px;"></div>
             </div>
-            <p style="color: #aaa; margin-top: 15px; line-height: 1.6;">Gain deep visibility into your catalog's health. Monitor processing throughput, accuracy confidence intervals, and category distributions in real-time. Drill down into specific SKU-level performance and identify anomalies instantly with our interactive, granular analytics suite.</p>
+            <p style="color: #aaa; margin-top: 15px; line-height: 1.6;">Gain deep visibility into your catalog's health with our interactive analytics suite.</p>
         </div>
     </div>
     """, unsafe_allow_html=True)
@@ -512,7 +427,7 @@ with r2c1:
     <div class="animate-on-scroll h-full">
         <div class="bento-card">
             <h3>Tech Stack</h3>
-             <p style="color: #aaa; margin: 10px 0; font-size: 0.9rem; line-height: 1.5;">Built on a rock-solid foundation of modern open-source technologies designed for speed and scalability.</p>
+             <p style="color: #aaa; margin: 10px 0; font-size: 0.9rem; line-height: 1.5;">Built on a rock-solid foundation.</p>
             <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px;">
                 <span style="padding: 5px 15px; background: #222; border-radius: 20px; font-size: 0.8rem;">TensorFlow</span>
                 <span style="padding: 5px 15px; background: #222; border-radius: 20px; font-size: 0.8rem;">Python</span>
@@ -532,19 +447,16 @@ with r2c2:
                 <div style="text-align: center;">
                     <div style="background: rgba(255,255,255,0.1); width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: auto;">1</div>
                     <p style="font-size: 0.8rem; margin-top: 10px; font-weight: bold;">Upload</p>
-                    <p style="font-size: 0.7rem; color: #888; max-width: 80px;">Secure ingest via API or UI</p>
                 </div>
                 <div class="workflow-line"></div>
                 <div style="text-align: center;">
                     <div style="background: rgba(5,117,230,0.2); border: 1px solid #0575e6; width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: auto;">2</div>
                     <p style="font-size: 0.8rem; margin-top: 10px; font-weight: bold;">Process</p>
-                    <p style="font-size: 0.7rem; color: #888; max-width: 80px;">Parallel GPU Inference</p>
                 </div>
                 <div class="workflow-line"></div>
                 <div style="text-align: center;">
                     <div style="background: rgba(0,242,96,0.2); width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: auto;">3</div>
                     <p style="font-size: 0.8rem; margin-top: 10px; font-weight: bold;">Result</p>
-                    <p style="font-size: 0.7rem; color: #888; max-width: 80px;">Actionable Metadata</p>
                 </div>
             </div>
         </div>
@@ -558,11 +470,6 @@ st.markdown("""
         <div>
             <h3 style="margin:0;">E-Commerce Intelligence</h3>
             <p style="font-size: 0.8rem; opacity: 0.5;">© 2026 Solutions. All rights reserved.</p>
-        </div>
-        <div style="display: flex; gap: 20px;">
-            <a href="#" style="color: #666; text-decoration: none;">Privacy</a>
-            <a href="#" style="color: #666; text-decoration: none;">Terms</a>
-            <a href="#" style="color: #666; text-decoration: none;">Twitter</a>
         </div>
     </div>
 </div>
