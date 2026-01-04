@@ -1,31 +1,58 @@
 import streamlit as st
+import requests
 import pandas as pd
-import numpy as np
-import datetime
-import random
+import io
+from PIL import Image
 
-# Page Configuration
+# Configuration
+API_URL = "http://127.0.0.1:5000/api/predict"
+
 st.set_page_config(
-    page_title="Predictions - E-Commerce Intelligence",
+    page_title="AI Predictor - E-ComVision",
     page_icon="🔮",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS
+# Custom CSS for Premium Look
 st.markdown("""
-<style>
-    .stApp {
-        background-color: #050505;
+    <style>
+    .main {
+        background-color: #0e1117;
         color: #ffffff;
     }
-    
-     [data-testid="stSidebar"] {
+    .stButton>button {
+        width: 100%;
+        border-radius: 10px;
+        background: linear-gradient(45deg, #FF4B4B, #FF914D);
+        color: white;
+        border: none;
+        padding: 0.5rem 1rem;
+        font-weight: bold;
+    }
+    [data-testid="stSidebar"] {
         background-color: #353942 !important;
         border-right: 1px solid rgba(255,255,255,0.1);
     }
     header[data-testid="stHeader"] {
         background-color: rgba(0,0,0,0) !important;
+    }
+    .stButton>button:hover {
+        background: linear-gradient(45deg, #FF914D, #FF4B4B);
+        border: none;
+    }
+    h1 {
+        font-family: 'Inter', sans-serif;
+        font-weight: 800;
+        background: -webkit-linear-gradient(45deg, #FF4B4B, #FF914D);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+    .css-1d391kg {
+        padding-top: 1rem;
+    }
+    .stProgress > div > div > div > div {
+        background-color: #FF4B4B;
     }
 
     /* Scroll Animation Utility */
@@ -39,20 +66,8 @@ st.markdown("""
         opacity: 1;
         transform: translateY(0);
     }
-
-    .prediction-card {
-        background: rgba(255, 255, 255, 0.03);
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        border-radius: 15px;
-        padding: 20px;
-        margin-bottom: 10px;
-    }
-
-    .confidence-high { color: #00f260; }
-    .confidence-med { color: #ffa500; }
-    .confidence-low { color: #ff4b4b; }
-</style>
-""", unsafe_allow_html=True)
+    </style>
+    """, unsafe_allow_html=True)
 
 import streamlit.components.v1 as components
 components.html("""
@@ -89,115 +104,78 @@ components.html("""
 with st.sidebar:
     st.image("https://cdn-icons-png.flaticon.com/512/3081/3081559.png", width=100)
     st.title("E-ComVision")
-    st.markdown("🔮 Prediction Insights")
+    st.markdown("🔮 Prediction System")
     st.markdown("---")
     if st.button("📊 Dashboard"):
         st.switch_page("pages/dashboard.py")
     if st.button("🛡️ Admin Panel"):
         st.switch_page("pages/admin.py")
 
-# Mock Data Generation
-categories = ["Electronics", "Clothing", "Home & Kitchen", "Beauty", "Sports", "Books"]
-status_options = ["Success", "Uncertain", "Failed"]
-
-def generate_mock_data(n=100):
-    data = []
-    base_date = datetime.datetime.now()
-    for i in range(n):
-        cat = random.choice(categories)
-        conf = random.uniform(0.4, 0.99)
-        status = "Success" if conf > 0.7 else ("Uncertain" if conf > 0.5 else "Failed")
-        data.append({
-            "Timestamp": (base_date - datetime.timedelta(minutes=random.randint(0, 10000))).strftime("%Y-%m-%d %H:%M"),
-            "Product ID": f"PRD-{random.randint(1000, 9999)}",
-            "Category": cat,
-            "Confidence": round(conf * 100, 2),
-            "Status": status
-        })
-    return pd.DataFrame(data)
-
-df = generate_mock_data(150)
-
-# Dashboard Layout
+# Main Content
 st.markdown('<div class="animate-on-scroll">', unsafe_allow_html=True)
-st.title("🔮 Prediction Analytics")
-st.markdown("In-depth analysis of AI categorization performance across all product lines.")
+st.title("AI Product Categorization")
+st.markdown("### 📸 Upload Product Image")
+
+uploaded_file = st.file_uploader("Choose an image...", type=["jpg", "png", "jpeg"])
 st.markdown('</div>', unsafe_allow_html=True)
 
-# Key Metrics
-st.markdown('<div class="animate-on-scroll">', unsafe_allow_html=True)
-m1, m2, m3, m4 = st.columns(4)
-m1.metric("Total Predictions", len(df), "+14%")
-m2.metric("Avg. Confidence", f"{df['Confidence'].mean():.1f}%", "+2.4%")
-m3.metric("Top Category", df['Category'].mode()[0])
-m4.metric("Accuracy Rate", "94.2%", "+0.5%")
-st.markdown('</div>', unsafe_allow_html=True)
+if uploaded_file is not None:
+    col1, col2 = st.columns([1, 2])
+    
+    with col1:
+        image = Image.open(uploaded_file)
+        st.image(image, caption='Uploaded Product', use_container_width=True)
+    
+    with col2:
+        st.markdown('<div class="animate-on-scroll">', unsafe_allow_html=True)
+        st.markdown("### 🔍 Analysis Results")
+        with st.spinner('Analysing image with AI...'):
+            try:
+                # Prepare file for API
+                files = {'file': uploaded_file.getvalue()}
+                response = requests.post(API_URL, files=files)
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    predictions = data.get('predictions', [])
+                    
+                    if predictions:
+                        # Top Prediction Highlighting
+                        top_pred = predictions[0]
+                        st.success(f"**Identified Category:** {top_pred['class'].replace('_', ' ').title()}")
+                        st.metric("Confidence Score", f"{top_pred['confidence']*100:.2f}%")
+                        
+                        # Data for Chart
+                        df = pd.DataFrame(predictions)
+                        df['class'] = df['class'].str.replace('_', ' ').str.title()
+                        df['confidence'] = df['confidence'] * 100
+                        
+                        st.markdown("#### Confidence Distribution")
+                        st.bar_chart(df.set_index('class')['confidence'])
+                        
+                        # Export Option
+                        st.markdown("### 📥 Export Data")
+                        csv = df.to_csv(index=False).encode('utf-8')
+                        st.download_button(
+                            "Download Analysis as CSV",
+                            csv,
+                            "product_analysis.csv",
+                            "text/csv",
+                            key='download-csv'
+                        )
+                    else:
+                        st.warning("No predictions returned.")
+                else:
+                    st.error(f"Error from API: {response.text}")
+            except Exception as e:
+                st.error(f"Connection Error: {e}")
+                st.markdown("*Make sure the Flask Backend is running!*")
+        st.markdown('</div>', unsafe_allow_html=True)
 
-st.markdown("---")
-
-# Visualizations
-c1, c2 = st.columns([2, 1])
-
-with c1:
-    st.markdown('<div class="animate-on-scroll">', unsafe_allow_html=True)
-    st.subheader("📈 Prediction Volume by Category")
-    cat_counts = df['Category'].value_counts()
-    st.bar_chart(cat_counts)
-    st.markdown('</div>', unsafe_allow_html=True)
-
-with c2:
-    st.markdown('<div class="animate-on-scroll">', unsafe_allow_html=True)
-    st.subheader("🎯 Confidence Distribution")
-    # Histogram of confidence
-    hist_values = np.histogram(df['Confidence'], bins=10, range=(40, 100))[0]
-    st.area_chart(hist_values)
-    st.markdown('</div>', unsafe_allow_html=True)
-
-st.markdown("---")
-
-# Detailed Table
-st.markdown('<div class="animate-on-scroll">', unsafe_allow_html=True)
-st.subheader("📑 Global Prediction History")
-
-# Filters
-f1, f2 = st.columns([2, 1])
-with f1:
-    search_q = st.text_input("🔍 Search by Product ID or Category", placeholder="Enter product details...")
-with f2:
-    status_filter = st.multiselect("Filter by Status", status_options, default=status_options)
-
-# Apply Filters
-filtered_df = df[df['Status'].isin(status_filter)]
-if search_q:
-    filtered_df = filtered_df[
-        filtered_df['Product ID'].str.contains(search_q, case=False) | 
-        filtered_df['Category'].str.contains(search_q, case=False)
-    ]
-
-st.dataframe(
-    filtered_df,
-    use_container_width=True,
-    hide_index=True,
-    column_config={
-        "Confidence": st.column_config.ProgressColumn(
-            "Confidence %",
-            help="Prediction confidence level",
-            min_value=0,
-            max_value=100,
-            format="%f%%"
-        ),
-        "Status": st.column_config.SelectboxColumn(
-            "Status",
-            options=status_options,
-            required=True
-        )
-    }
-)
-st.markdown('</div>', unsafe_allow_html=True)
-
-# Footer
-st.markdown("""
-<div style="text-align: center; margin-top: 50px; color: #666; font-size: 0.8rem;">
-    Powered by E-ComVision AI Engine • Last Updated: {}
-</div>
-""".format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")), unsafe_allow_html=True)
+else:
+    st.markdown("""
+    <div style='text-align: center; padding: 50px; background-color: #262730; border-radius: 10px;'>
+        <h3>Waiting for upload...</h3>
+        <p>Supported formats: JPG, PNG</p>
+    </div>
+    """, unsafe_allow_html=True)

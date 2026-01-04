@@ -385,7 +385,7 @@ with c1:
     st.markdown("<h1>E-Commerce <br> Intelligence .<br><span style='font-size: 0.5em; opacity: 1; color: #888; font-weight: 400;'>Automated Recognition</span></h1>", unsafe_allow_html=True)
     st.markdown('<p class="desc-text" style="color: #ccc; font-size: 1.2rem; margin: 30px 0; line-height: 1.6;">Leverage our enterprise-grade computer vision pipeline to automate product tagging, defect detection, and catalog organization. Built for high-volume e-commerce operations, our solution processes millions of images daily with 99.8% accuracy, freeing your team to focus on strategy rather than manual moderation.</p>', unsafe_allow_html=True)
     
-    st.markdown('<a href="/login" target="_self" class="nav-button">Access Dashboard →</a>', unsafe_allow_html=True)
+    st.markdown('<a href="/login" target="_self" class="nav-button">Let\'s predict →</a>', unsafe_allow_html=True)
     st.markdown('<a href="/admin" target="_self" class="nav-button">🛡️ Admin Portal</a>', unsafe_allow_html=True)
 
     st.markdown('<div style="text-align: left; margin-top: 20px;">', unsafe_allow_html=True)
