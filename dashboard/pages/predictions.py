@@ -8,8 +8,8 @@ from PIL import Image
 API_URL = "http://127.0.0.1:5000/api/predict"
 
 st.set_page_config(
-    page_title="E-ComVision AI",
-    page_icon="🛍️",
+    page_title="AI Predictor - E-ComVision",
+    page_icon="🔮",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -30,6 +30,13 @@ st.markdown("""
         padding: 0.5rem 1rem;
         font-weight: bold;
     }
+    [data-testid="stSidebar"] {
+        background-color: #353942 !important;
+        border-right: 1px solid rgba(255,255,255,0.1);
+    }
+    header[data-testid="stHeader"] {
+        background-color: rgba(0,0,0,0) !important;
+    }
     .stButton>button:hover {
         background: linear-gradient(45deg, #FF914D, #FF4B4B);
         border: none;
@@ -47,25 +54,70 @@ st.markdown("""
     .stProgress > div > div > div > div {
         background-color: #FF4B4B;
     }
+
+    /* Scroll Animation Utility */
+    .animate-on-scroll {
+        opacity: 0;
+        transform: translateY(20px);
+        transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+    }
+    
+    .animate-on-scroll.active {
+        opacity: 1;
+        transform: translateY(0);
+    }
     </style>
     """, unsafe_allow_html=True)
+
+import streamlit.components.v1 as components
+components.html("""
+<script>
+(function() {
+    function initScrollAnimations() {
+        const parentDoc = window.parent.document;
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('active');
+                }
+            });
+        }, observerOptions);
+
+        const animatedElements = parentDoc.querySelectorAll('.animate-on-scroll');
+        animatedElements.forEach(el => observer.observe(el));
+    }
+    
+    initScrollAnimations();
+    setTimeout(initScrollAnimations, 500);
+    setTimeout(initScrollAnimations, 1000);
+    setTimeout(initScrollAnimations, 2000);
+})();
+</script>
+""", height=0)
 
 # Sidebar
 with st.sidebar:
     st.image("https://cdn-icons-png.flaticon.com/512/3081/3081559.png", width=100)
     st.title("E-ComVision")
-    st.markdown("Automated Product Recognition System")
+    st.markdown("🔮 Prediction System")
     st.markdown("---")
-    st.markdown("### ⚙️ Settings")
-    st.slider("Confidence Threshold", 0.0, 1.0, 0.2)
-    st.markdown("---")
-    st.info("Upload a product image to classify it automatically.")
+    if st.button("📊 Dashboard"):
+        st.switch_page("pages/dashboard.py")
+    if st.button("🛡️ Admin Panel"):
+        st.switch_page("pages/admin.py")
 
 # Main Content
-st.title("Product Classification Dashboard")
+st.markdown('<div class="animate-on-scroll">', unsafe_allow_html=True)
+st.title("AI Product Categorization")
 st.markdown("### 📸 Upload Product Image")
 
 uploaded_file = st.file_uploader("Choose an image...", type=["jpg", "png", "jpeg"])
+st.markdown('</div>', unsafe_allow_html=True)
 
 if uploaded_file is not None:
     col1, col2 = st.columns([1, 2])
@@ -75,13 +127,11 @@ if uploaded_file is not None:
         st.image(image, caption='Uploaded Product', use_container_width=True)
     
     with col2:
+        st.markdown('<div class="animate-on-scroll">', unsafe_allow_html=True)
         st.markdown("### 🔍 Analysis Results")
         with st.spinner('Analysing image with AI...'):
             try:
                 # Prepare file for API
-                # Reset pointer to start because Image.open might have moved it? 
-                # Actually uploaded_file is a BytesIO-like object. 
-                # Accessing .getvalue() is safer for requests.
                 files = {'file': uploaded_file.getvalue()}
                 response = requests.post(API_URL, files=files)
                 
@@ -120,6 +170,7 @@ if uploaded_file is not None:
             except Exception as e:
                 st.error(f"Connection Error: {e}")
                 st.markdown("*Make sure the Flask Backend is running!*")
+        st.markdown('</div>', unsafe_allow_html=True)
 
 else:
     st.markdown("""

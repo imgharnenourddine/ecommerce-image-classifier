@@ -1,0 +1,8 @@
+from backend import app, db
+
+if __name__ == '__main__':
+    with app.app_context():
+        
+        db.create_all()
+        print("✅ Serveur démarré et Base de Données connectée !")
+    app.run(debug=True)
