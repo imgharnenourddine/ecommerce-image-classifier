@@ -13,7 +13,15 @@ db = SQLAlchemy(app)
 bcrypt = Bcrypt(app)
 login_manager = LoginManager(app) # J'utilise le nom standard snake_case
 login_manager.login_view = 'auth.login'
+from flask import send_from_directory
+import os
 
+
+@app.route('/uploads/<filename>')
+def serve_uploaded_file(filename):
+    
+    upload_path = os.path.join(app.root_path, 'uploads') 
+    return send_from_directory(upload_path, filename)
 CORS(app)
 
 @login_manager.unauthorized_handler

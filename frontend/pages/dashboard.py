@@ -106,7 +106,7 @@ except:
 
 st.title(f"Bonjour, {stats.get('username', 'Utilisateur')} 👋")
 
-# --- MÉTRIQUES CORRIGÉES ---
+# --- MÉTRIQUES ---
 m1, m2, m3 = st.columns(3)
 with m1:
     with st.container(border=True):
@@ -114,9 +114,7 @@ with m1:
 
 with m2:
     with st.container(border=True):
-        # Correction du pourcentage : 0.85 -> 85.0%
         raw_conf = stats.get('avg_confidence', 0)
-        # On vérifie si c'est un ratio (ex: 0.76) ou déjà un pourcentage (ex: 76)
         display_conf = raw_conf * 100 if raw_conf <= 1.0 else raw_conf
         st.metric("Confiance Moyenne", f"{display_conf:.2f}%")
 
@@ -127,26 +125,43 @@ with m3:
 st.write("")
 
 # --- HISTORIQUE ET VISUALISATION ---
-col_table, col_viz = st.columns([1.5, 1], gap="medium")
+col_table, col_viz = st.columns([1.8, 1], gap="medium")
 with col_table:
     with st.container(border=True):
-        st.subheader("📑 Historique")
+        st.subheader("📑 Historique des prédictions")
         if not df.empty:
-            df_display = df[['date', 'category', 'confidence', 'status']].copy()
+            # On récupère les colonnes, y compris image_path
+            df_display = df.copy()
             
-            # Formater la colonne confiance en pourcentage pour le tableau
-            # Si la valeur est 0.85, elle devient "85.0%"
+            # 1. Création de l'URL pour la colonne ImageColumn
+            # On suppose que l'API Flask sert les images sur /uploads/
+            df_display['preview'] = df_display['image_path'].apply(
+                lambda x: f"http://127.0.0.1:5000/uploads/{x}" if x else None
+            )
+            
+            # 2. Formatage de la confiance
             df_display['confidence'] = df_display['confidence'].apply(
                 lambda x: f"{x*100:.1f}%" if x <= 1.0 else f"{x:.1f}%"
             )
             
-            st.dataframe(df_display, use_container_width=True, hide_index=True)
+            # 3. Configuration de l'affichage du tableau
+            st.dataframe(
+                df_display[['date', 'preview', 'category', 'confidence', 'status']],
+                column_config={
+                    "preview": st.column_config.ImageColumn("Aperçu", width="small"),
+                    "date": "Date d'analyse",
+                    "category": "Produit",
+                    "confidence": "Confiance",
+                    "status": "Statut"
+                },
+                use_container_width=True,
+                hide_index=True
+            )
         else:
-            st.info("Aucun historique.")
+            st.info("Aucun historique disponible.")
 
 with col_viz:
     with st.container(border=True):
-        st.subheader("📈 Répartition")
+        st.subheader("📈 Répartition par catégorie")
         if not df.empty:
-            # Graphique des catégories
             st.bar_chart(df['category'].value_counts(), color="#0575e6")
