@@ -1,62 +1,76 @@
-# import os
-# import numpy as np
-# from tensorflow.keras.models import load_model
-# from tensorflow.keras.preprocessing import image
+import os
+import torch
+import torch.nn as nn
+from torchvision import models, transforms
+from PIL import Image
 
+# --- CONFIGURATION DES CHEMINS ---
+BASE_DIR = os.path.dirname(os.path.abspath(__file__)) # dossier 'ai'
+BACKEND_DIR = os.path.dirname(BASE_DIR)              # dossier 'backend'
+ROOT_DIR = os.path.dirname(BACKEND_DIR)               # Racine du projet
 
-# BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-# BASE_DIR = os.path.dirname(os.path.dirname(BASE_DIR))
-# MODEL_PATH = os.path.join(BASE_DIR, 'model', 'model.h5')
+# Le chemin pointe maintenant vers : Racine/model/ecommerce_resnet50.pth
+MODEL_PATH = os.path.join(ROOT_DIR, 'model', 'ecommerce_resnet50.pth')
 
-# IMG_HEIGHT = 224
-# IMG_WIDTH = 224
-# CLASS_NAMES = ['Classe 0', 'Classe 1', 'Classe 2'] 
+# --- CONFIGURATION IA ---
+# Remplace par tes vraies catégories dans l'ordre alphabétique
+CLASS_NAMES = ['Handbags', 'Jeans', 'Shirts', 'Shoes', 'Watches']
+num_classes = len(CLASS_NAMES)
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-# print(f"🔄 Chargement du modèle IA depuis : {MODEL_PATH}")
-# try:
-#     model = load_model(MODEL_PATH)
-#     print("✅ Modèle chargé avec succès !")
-# except Exception as e:
-#     print(f"❌ ERREUR CRITIQUE : Impossible de charger le modèle.\n{e}")
-#     model = None
-
-# def predict_image(image_path):
-   
-    
-#     # Sécurité : Si le modèle a planté au chargement
-#     if model is None:
-#         return "Erreur Modèle", 0.0
-
-#     try:
-#         # A. Chargement et Redimensionnement de l'image
-#         img = image.load_img(image_path, target_size=(IMG_HEIGHT, IMG_WIDTH))
-
-#         # B. Transformation en tableau de nombres (Array)
-#         img_array = image.img_to_array(img)
-
-#         # C. Ajout d'une dimension pour le batch (Le modèle attend [1, 224, 224, 3])
-#         img_array = np.expand_dims(img_array, axis=0)
-
-#         # D. Normalisation (CRUCIAL : Diviser par 255 si vous l'avez fait à l'entraînement)
-#         img_array = img_array / 255.0
-
-#         # E. Prédiction
-#         predictions = model.predict(img_array)
+# --- CHARGEMENT DU MODÈLE ---
+def load_resnet_model():
+    print(f"🔄 Chargement du modèle PyTorch depuis : {MODEL_PATH}")
+    try:
+        # 1. Recréer l'architecture ResNet50
+        model = models.resnet50(weights=None)
+        num_ftrs = model.fc.in_features
+        model.fc = nn.Linear(num_ftrs, num_classes)
         
-#         # --- LOGIQUE DE DÉCODAGE (CHOISISSEZ VOTRE CAS) ---
-        
-#         # CAS 1 : Classification Multi-classes (Softmax - Plusieurs neurones de sortie)
-#         # On prend l'index qui a la plus grande probabilité
-       
-#         class_index = np.argmax(predictions[0])
-#         confidence = float(np.max(predictions[0])) * 100
-#         result_class = CLASS_NAMES[class_index]
+        # 2. Charger les poids (.pth)
+        model.load_state_dict(torch.load(MODEL_PATH, map_location=device))
+        model.to(device)
+        model.eval() # Mode évaluation
+        print("✅ Modèle ResNet50 chargé avec succès !")
+        return model
+    except Exception as e:
+        print(f"❌ ERREUR : Impossible de charger le modèle.\n{e}")
+        return None
 
-        
+model = load_resnet_model()
 
-#         print(f"🔍 Résultat IA : {result_class} ({confidence:.2f}%)")
-#         return result_class, round(confidence, 2)
+# --- FONCTION DE PRÉDICTION ---
+def predict_image(image_path):
+    if model is None:
+        return "Erreur Modèle", 0.0
 
-#     except Exception as e:
-#         print(f"⚠️ Erreur pendant la prédiction : {str(e)}")
-#         return "Erreur Inconnue", 0.0
+    try:
+        # 1. Préparation de l'image (Exactement comme à l'entraînement)
+        transform = transforms.Compose([
+            transforms.Resize((224, 224)),
+            transforms.ToTensor(),
+            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+        ])
+
+        # 2. Ouvrir l'image
+        img = Image.open(image_path).convert('RGB')
+        img_tensor = transform(img).unsqueeze(0).to(device)
+
+        # 3. Prédiction
+        with torch.no_grad():
+            outputs = model(img_tensor)
+            # Softmax pour obtenir des probabilités (0 à 1)
+            probabilities = torch.nn.functional.softmax(outputs[0], dim=0)
+            
+            # Récupérer le meilleur score
+            confidence, class_index = torch.max(probabilities, 0)
+            
+        result_class = CLASS_NAMES[class_index.item()]
+        conf_score = confidence.item() * 100
+
+        print(f"🔍 Résultat IA : {result_class} ({conf_score:.2f}%)")
+        return result_class, round(conf_score, 2)
+
+    except Exception as e:
+        print(f"⚠️ Erreur pendant la prédiction : {str(e)}")
+        return "Erreur Image", 0.0
