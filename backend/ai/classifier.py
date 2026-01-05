@@ -5,16 +5,16 @@ from torchvision import models, transforms
 from PIL import Image
 
 # --- CONFIGURATION DES CHEMINS ---
-BASE_DIR = os.path.dirname(os.path.abspath(__file__)) # dossier 'ai'
-BACKEND_DIR = os.path.dirname(BASE_DIR)              # dossier 'backend'
-ROOT_DIR = os.path.dirname(BACKEND_DIR)               # Racine du projet
+BASE_DIR = os.path.dirname(os.path.abspath(__file__)) 
+BACKEND_DIR = os.path.dirname(BASE_DIR)              
+ROOT_DIR = os.path.dirname(BACKEND_DIR)               
 
-# Le chemin pointe maintenant vers : Racine/model/ecommerce_resnet50.pth
+# Chemin vers le nouveau modèle entraîné avec 4 catégories
 MODEL_PATH = os.path.join(ROOT_DIR, 'model', 'ecommerce_resnet50.pth')
 
 # --- CONFIGURATION IA ---
-# Remplace par tes vraies catégories dans l'ordre alphabétique
-CLASS_NAMES = ['Handbags', 'Jeans', 'Shirts', 'Shoes', 'Watches']
+# Ordre alphabétique strict correspondant aux dossiers de ecommerce_dataset/train
+CLASS_NAMES = ['Handbags', 'Jeans', 'Shirts', 'Watches']
 num_classes = len(CLASS_NAMES)
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -22,19 +22,20 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 def load_resnet_model():
     print(f"🔄 Chargement du modèle PyTorch depuis : {MODEL_PATH}")
     try:
-        # 1. Recréer l'architecture ResNet50
+        # Initialisation architecture ResNet50
         model = models.resnet50(weights=None)
         num_ftrs = model.fc.in_features
+        # On définit 4 neurones de sortie
         model.fc = nn.Linear(num_ftrs, num_classes)
         
-        # 2. Charger les poids (.pth)
+        # Chargement des poids entraînés
         model.load_state_dict(torch.load(MODEL_PATH, map_location=device))
         model.to(device)
-        model.eval() # Mode évaluation
-        print("✅ Modèle ResNet50 chargé avec succès !")
+        model.eval() 
+        print("✅ Modèle ResNet50 (4 classes) chargé avec succès !")
         return model
     except Exception as e:
-        print(f"❌ ERREUR : Impossible de charger le modèle.\n{e}")
+        print(f"❌ ERREUR CHARGEMENT : {e}")
         return None
 
 model = load_resnet_model()
@@ -45,32 +46,35 @@ def predict_image(image_path):
         return "Erreur Modèle", 0.0
 
     try:
-        # 1. Préparation de l'image (Exactement comme à l'entraînement)
+        # Prétraitement standard pour ResNet
         transform = transforms.Compose([
             transforms.Resize((224, 224)),
             transforms.ToTensor(),
             transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
         ])
 
-        # 2. Ouvrir l'image
+        # Ouverture de l'image
         img = Image.open(image_path).convert('RGB')
         img_tensor = transform(img).unsqueeze(0).to(device)
 
-        # 3. Prédiction
         with torch.no_grad():
             outputs = model(img_tensor)
-            # Softmax pour obtenir des probabilités (0 à 1)
-            probabilities = torch.nn.functional.softmax(outputs[0], dim=0)
             
-            # Récupérer le meilleur score
-            confidence, class_index = torch.max(probabilities, 0)
+            # Conversion des scores bruts en probabilités (Somme = 1.0)
+            probabilities = torch.nn.functional.softmax(outputs, dim=1)
             
-        result_class = CLASS_NAMES[class_index.item()]
-        conf_score = confidence.item() * 100
+            # Extraction de la classe avec la plus haute probabilité
+            confidence, class_index = torch.max(probabilities, 1)
+            
+            # On récupère la valeur entre 0.0 et 1.0
+            conf_score = confidence.item() 
+            result_class = CLASS_NAMES[class_index.item()]
 
-        print(f"🔍 Résultat IA : {result_class} ({conf_score:.2f}%)")
-        return result_class, round(conf_score, 2)
+        print(f"🔍 Résultat IA : {result_class} ({conf_score*100:.2f}%)")
+        
+        # On retourne le label et le score (ex: 0.8542)
+        return result_class, round(conf_score, 4)
 
     except Exception as e:
-        print(f"⚠️ Erreur pendant la prédiction : {str(e)}")
+        print(f"⚠️ Erreur prédiction : {str(e)}")
         return "Erreur Image", 0.0
