@@ -43,7 +43,7 @@ model = load_resnet_model()
 # --- FONCTION DE PRÉDICTION ---
 def predict_image(image_path):
     if model is None:
-        return "Erreur Modèle", 0.0
+        return "Model Error", 0.0
 
     try:
         # Prétraitement standard pour ResNet
@@ -77,4 +77,4 @@ def predict_image(image_path):
 
     except Exception as e:
         print(f"⚠️ Erreur prédiction : {str(e)}")
-        return "Erreur Image", 0.0
+        return "Image Error", 0.0

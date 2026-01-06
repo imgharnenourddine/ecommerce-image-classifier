@@ -16,7 +16,7 @@ def user_stats():
     user_predictions = db.session.query(Prediction).join(Image).filter(Image.user_id == user_id).all()
     
     avg_confidence = 0.0
-    top_category = "Aucune"
+    top_category = "None"
     
     if user_predictions:
         total_conf = sum(p.confidence for p in user_predictions)
@@ -46,9 +46,9 @@ def user_history():
     history_data = []
     for img, pred in results:
         # Statut basé sur la confiance brute
-        if pred.confidence > 0.8: status = "Succès"
-        elif pred.confidence > 0.5: status = "Incertain"
-        else: status = "Échec"
+        if pred.confidence > 0.8: status = "Success"
+        elif pred.confidence > 0.5: status = "Uncertain"
+        else: status = "Failed"
 
         history_data.append({
             "id": img.id,
@@ -69,7 +69,7 @@ def admin_global_stats():
     """
     # Sécurité : Vérifier si c'est un admin
     if not getattr(current_user, 'is_admin', False):
-        return jsonify({"error": "Accès interdit"}), 403
+        return jsonify({"error": "Access denied"}), 403
 
     total_users = User.query.count()
     total_predictions = Prediction.query.count()
@@ -96,7 +96,7 @@ def admin_users_list():
     Renvoie la liste détaillée de tous les utilisateurs inscrits.
     """
     if not getattr(current_user, 'is_admin', False):
-        return jsonify({"error": "Accès interdit"}), 403
+        return jsonify({"error": "Access denied"}), 403
 
     users = User.query.all()
     users_data = []
@@ -109,7 +109,7 @@ def admin_users_list():
             "id": u.id,
             "username": u.username,
             "email": u.email,
-            "role": "Admin" if u.is_admin else "Utilisateur",
+            "role": "Admin" if u.is_admin else "User",
             "total_scans": scan_count
         })
 

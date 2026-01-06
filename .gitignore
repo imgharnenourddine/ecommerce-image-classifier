@@ -63,3 +63,9 @@ venv.bak/
 .idea/
 *.swp
 *.swo
+
+# Local assets
+backend/app.db
+backend/uploads/*
+!backend/uploads/.gitkeep
+

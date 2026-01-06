@@ -34,13 +34,15 @@ def save_prediction_image(form_picture):
 def predict():
     mode = request.args.get('mode', 'temp') 
     if 'file' not in request.files:
-        return jsonify({"error": "Aucun fichier envoyé"}), 400
+        return jsonify({"error": "No file sent"}), 400
     
     file = request.files['file']
+    if file.filename == '':
+        return jsonify({"error": "Empty filename"}), 400
 
     try:
         if mode == "temp":
-            # --- MODE TEMPORAIRE : Analyse d'une zone ---
+            # --- TEMPORARY MODE: Analyze a zone ---
             temp_fn = f"temp_{secrets.token_hex(4)}.jpg"
             temp_path = os.path.join(os.getcwd(), temp_fn)
             file.save(temp_path)
@@ -56,37 +58,37 @@ def predict():
             }), 200
 
         elif mode == "final":
-            # --- MODE FINAL : Enregistrement de l'image entière ---
+            # --- FINAL MODE: Save entire image ---
             filename, _ = save_prediction_image(file)
             
-            final_labels = request.form.get('final_labels', 'Inconnu')
+            final_labels = request.form.get('final_labels', 'Unknown')
             final_confs_str = request.form.get('final_confs', '0%')
 
-            # Calcul d'une confiance moyenne pour le Dashboard
+            # Calculate average confidence for Dashboard
             try:
                 scores = [float(s) for s in re.findall(r"(\d+\.\d+)%", final_confs_str)]
                 avg_conf = (sum(scores) / len(scores) / 100) if scores else 0.0
             except:
                 avg_conf = 0.0
 
-            # 1. Sauvegarde de l'image
+            # 1. Save image
             new_image = Image(user_id=current_user.id, image_path=filename)
             db.session.add(new_image)
-            db.session.flush() # Récupère l'ID
+            db.session.flush() # Get ID
             
-            # 2. Sauvegarde de la prédiction groupée
+            # 2. Save grouped prediction
             new_prediction = Prediction(
                 image_id=new_image.id,         
                 predicted_label=final_labels,
                 confidence=avg_conf,
-                model="ResNet50_Multi",
-                
+                model="ResNet50_Multi"
             )
             db.session.add(new_prediction)
             db.session.commit()
 
-            return jsonify({"status": "success", "message": "Analyse enregistrée"}), 200
+            return jsonify({"status": "success", "message": "Analysis saved successfully"}), 200
 
     except Exception as e:
         db.session.rollback()
-        return jsonify({"error": str(e)}), 500
+        print(f"❌ Server error: {e}")
+        return jsonify({"error": "Internal error", "details": str(e)}), 500
