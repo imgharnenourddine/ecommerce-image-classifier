@@ -11,9 +11,6 @@ class User(db.Model, UserMixin):
     email = db.Column(db.String(60), unique=True, nullable=False)
     password = db.Column(db.String(60), nullable=False)
     is_admin = db.Column(db.Boolean, default=False, nullable=False)
-    
-    # Relation : Un User a plusieurs Images
-    # 'Image' avec majuscule car c'est la classe Python
     images = db.relationship('Image', backref='proprietaire', lazy=True)
 
     def __repr__(self):
